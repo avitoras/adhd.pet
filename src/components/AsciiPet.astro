@@ -1,0 +1,71 @@
+---
+const framesImported = import.meta.glob('../frames/*.txt', {
+  eager: true,
+  query: '?raw',
+  import: 'default',
+});
+
+const frames = Object.entries(framesImported)
+  .sort(([a], [b]) => a.localeCompare(b))
+  .map(([, content]) => (content as string).replace(/\s+$/, ''));
+
+const cols = Math.max(...frames.flatMap((f) => f.split('\n').map((l) => l.length)));
+const rows = Math.max(...frames.map((f) => f.split('\n').length));
+---
+
+<div
+  class="ascii-pet"
+  data-frame-delay="30"
+  style={`--cols: ${cols}; --rows: ${rows};`}
+  aria-label="ASCII cat animation"
+>
+  {frames.map((frame, i) => (
+    <pre class:list={['frame', { hidden: i !== 0 }]}>{frame}</pre>
+  ))}
+</div>
+
+<script>
+  const player = document.querySelector<HTMLElement>('.ascii-pet');
+  if (player && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const frames = player.querySelectorAll<HTMLElement>('.frame');
+    const delay = Number(player.dataset.frameDelay ?? '30');
+    let current = 0;
+    setInterval(() => {
+      frames[current]!.classList.add('hidden');
+      current = (current + 1) % frames.length;
+      frames[current]!.classList.remove('hidden');
+    }, delay);
+  }
+</script>
+
+<style>
+  .ascii-pet {
+    --cell-w: 0.586;
+    --cell-h: 1.172;
+    font-size: min(
+      12px,
+      calc((100dvw - 2rem) / (var(--cols) * var(--cell-w))),
+      calc((100dvh - 10rem) / (var(--rows) * var(--cell-h)))
+    );
+    line-height: var(--cell-h);
+    font-variant-ligatures: none;
+    font-feature-settings: 'liga' 0, 'calt' 0;
+    text-rendering: optimizeSpeed;
+    width: calc(var(--cols) * var(--cell-w) * 1em);
+    height: calc(var(--rows) * var(--cell-h) * 1em);
+    overflow: hidden;
+    margin-inline: auto;
+    user-select: none;
+    color: currentColor;
+  }
+  .frame {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    white-space: pre;
+    margin: 0;
+  }
+  .hidden {
+    display: none;
+  }
+</style>
